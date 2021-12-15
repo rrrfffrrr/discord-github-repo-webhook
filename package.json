@@ -1,0 +1,25 @@
+{
+  "name": "discord-github-repo-webhook",
+  "version": "1.0.0",
+  "description": "Add a chat channel when a repo created on organization and add webhook to show events on discord",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "run": "tsc && node bin/entry"
+  },
+  "keywords": [
+    "github",
+    "discord",
+    "webhook"
+  ],
+  "author": "rrrfffrrr@naver.com",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^13.3.1",
+    "express": "^4.17.1",
+    "rxjs": "^7.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.4"
+  }
+}
