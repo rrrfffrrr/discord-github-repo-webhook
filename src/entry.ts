@@ -7,7 +7,6 @@ import Database from 'better-sqlite3'
 
 import { sign, verify } from '@octokit/webhooks-methods'
 import { Octokit } from '@octokit/rest'
-import { createTokenAuth } from '@octokit/auth-token'
 import { existsSync, mkdirSync } from 'fs'
 
 const OPTION_VERSION = 1
