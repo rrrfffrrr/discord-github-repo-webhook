@@ -47,13 +47,15 @@ const QUERY = {
         CREATE_TABLE: `CREATE TABLE IF NOT EXISTS repositories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            valid INTEGER DEFAULT 1,
             repository TEXT NOT NULL,
             channelId TEXT NOT NULL,
             githubWebHook INTEGER,
             discordWebHook TEXT NOT NULL
         )`,
         UPDATE: `INSERT INTO repositories (repository, channelId, githubWebHook, discordWebHook) VALUES (?, ?, ?, ?)`,
-        GET: `SELECT channelId, githubWebHook, discordWebHook FROM repositories WHERE repository = ? ORDER BY id DESC LIMIT 1`
+        GET: `SELECT valid, channelId, githubWebHook, discordWebHook FROM repositories WHERE repository = ? ORDER BY id DESC LIMIT 1`,
+        EXPIRE: `INSERT INTO repositories (valid, repository, channelId, githubWebHook, discordWebHook) VALUES (0, ?, "", "", "")`,
     },
 }
 //#endregion
@@ -93,6 +95,7 @@ let OPTION: Option = {
         REPOSITORY: {
             UPDATE: DB.prepare(QUERY.REPOSITORY.UPDATE),
             GET: DB.prepare(QUERY.REPOSITORY.GET),
+            EXPIRE: DB.prepare(QUERY.REPOSITORY.EXPIRE),
         }
     }
     
@@ -109,7 +112,10 @@ let OPTION: Option = {
         let data = PREPARED_QUERY.REPOSITORY.GET.get(repository)
         if (data === undefined)
             return undefined
-        return [data.channelId, data.githubWebHook, data.discordWebHook]
+        return [data.valid > 0, data.channelId, data.githubWebHook, data.discordWebHook]
+    }
+    function ExpireRepository(repository: string) {
+        PREPARED_QUERY.REPOSITORY.EXPIRE.run(repository)
     }
 
     {
@@ -165,7 +171,8 @@ let OPTION: Option = {
             
             repos.data.forEach(async v => {
                 try {
-                    if (GetRepository(v.name)) { // pass if exists
+                    let data = GetRepository(v.name)
+                    if (data && data[0]) { // pass if exists
                         RemoveGithubDiscordLink(v.name)
                         return
                     }
@@ -218,11 +225,11 @@ let OPTION: Option = {
     }
     async function RemoveGithubDiscordLink(repository: string) {
         let data = GetRepository(repository)
-        if (data === undefined)
+        if (!data || data[0])
             return
         
         logger.info(`Remove link for ${repository}`)
-        let [channelId, githubWebHook, discordWebHook] = data
+        let [_, channelId, githubWebHook, discordWebHook] = data
 
         try {
             await GITHUB.rest.repos.deleteWebhook({
@@ -238,8 +245,10 @@ let OPTION: Option = {
         try {
             guild.channels.cache.get(channelId)?.delete()
         } catch {
-            
+
         }
+
+        ExpireRepository(repository)
     }
     //#endregion
 
