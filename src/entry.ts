@@ -77,18 +77,6 @@ logger.info("Discord: Initialize")
 const DISCORD_COMMAND = new CommandCollection()
 DISCORD_COMMAND.AddCommand({
     data: new SlashCommandBuilder()
-        .setName('avatar')
-        .setDescription('Get the avatar URL of the selected user, or your own avatar.')
-        .addUserOption(option => 
-            option.setName('target').setDescription('The user\'s avatar to show')
-    ),
-    async execute(interaction: CommandInteraction) {
-        const user = interaction.options.getUser('target');
-        if (user) return interaction.reply(`${user.username}'s avatar: ${user.displayAvatarURL({ dynamic: true })}`);
-        return interaction.reply(`Your avatar: ${interaction.user.displayAvatarURL({ dynamic: true })}`);
-    },
-}).AddCommand({
-    data: new SlashCommandBuilder()
         .setName('regist')
         .setDescription('Regist github organization to create channels automatically.')
         .addStringOption(option =>  option.setName('organization').setRequired(true).setDescription('A target organization to generate channels.'))
