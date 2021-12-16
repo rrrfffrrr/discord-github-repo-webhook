@@ -197,6 +197,9 @@ let OPTION: Option = {
 
     //#region Logic
     async function GenerateGithubDiscordLink(repository: string, description: string) {
+        if (process.env.MANAGE_MODE && process.env.MANAGE_MODE === 'remove')
+            return
+
         let data = GetRepository(repository)
         if (data !== undefined)
             return
@@ -224,6 +227,9 @@ let OPTION: Option = {
         UpdateRepository(repository, channel.id, githubHook.data.id, discordHook.id)
     }
     async function RemoveGithubDiscordLink(repository: string) {
+        if (process.env.MANAGE_MODE && process.env.MANAGE_MODE === 'add')
+            return
+
         let data = GetRepository(repository)
         if (!data || data[0])
             return
