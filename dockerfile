@@ -2,7 +2,7 @@ FROM node:alpine
 WORKDIR /usr/src/app
 
 # Prepare build tools
-RUN apk add --no-cache build-base python3
+RUN apk add --no-cache build-base python
 
 # install packages
 COPY package*.json ./
@@ -17,7 +17,7 @@ RUN npm run build
 
 # Remove unecessary files
 RUN npm prune --production
-RUN apk del build-base python3
+RUN apk del build-base python
 
 ENV NODE_ENV=production
 ENV LOG_LEVEL=info
