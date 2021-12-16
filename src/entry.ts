@@ -54,7 +54,7 @@ const QUERY = {
             discordWebHook TEXT NOT NULL
         )`,
         UPDATE: `INSERT INTO repositories (repository, channelId, githubWebHook, discordWebHook) VALUES (?, ?, ?, ?)`,
-        GET_CHANNEL: `SELECT channelId FROM repositories WHERE repository = ? ORDER BY id DESC LIMIT 1`
+        GET: `SELECT channelId, githubWebHook, discordWebHook FROM repositories WHERE repository = ? ORDER BY id DESC LIMIT 1`
     },
 }
 //#endregion
@@ -93,7 +93,7 @@ let OPTION: Option = {
         },
         REPOSITORY: {
             UPDATE: DB.prepare(QUERY.REPOSITORY.UPDATE),
-            GET_CHANNEL: DB.prepare(QUERY.REPOSITORY.GET_CHANNEL),
+            GET: DB.prepare(QUERY.REPOSITORY.GET),
         }
     }
     
@@ -106,8 +106,11 @@ let OPTION: Option = {
     function UpdateRepository(repository: string, channelId: string, githubWebHook: number, discordWebHook: string) {
         PREPARED_QUERY.REPOSITORY.UPDATE.run(repository, channelId, githubWebHook, discordWebHook)
     }
-    function GetChannelId(repository: string) {
-        return PREPARED_QUERY.REPOSITORY.GET_CHANNEL.get(repository)?.channelId
+    function GetRepository(repository: string) {
+        let data = PREPARED_QUERY.REPOSITORY.GET.get(repository)
+        if (data === undefined)
+            return undefined
+        return [data.channelId, data.githubWebHook, data.discordWebHook]
     }
 
     {
@@ -163,7 +166,8 @@ let OPTION: Option = {
             
             repos.data.forEach(async v => {
                 try {
-                    if (PREPARED_QUERY.REPOSITORY.GET_CHANNEL.get(v.name)) { // pass if exists
+                    if (GetRepository(v.name)) { // pass if exists
+                        RemoveGithubDiscordLink(v.name)
                         return
                     }
 
@@ -187,6 +191,7 @@ let OPTION: Option = {
 
     //#region Logic
     async function GenerateGithubDiscordLink(repository: string, description: string) {
+        logger.info(`Generate link for ${repository}`)
         let guild = DISCORD.guilds.cache.get(process.env.DISCORD_SERVERID!)!
 
         let channel = await guild.channels.create(repository, {
@@ -207,6 +212,22 @@ let OPTION: Option = {
         })
 
         UpdateRepository(repository, channel.id, githubHook.data.id, discordHook.id)
+    }
+    async function RemoveGithubDiscordLink(repository: string) {
+        logger.info(`Remove link for ${repository}`)
+        let data = GetRepository(repository)
+        if (data === undefined)
+            return
+        let [channelId, githubWebHook, discordWebHook] = data
+
+        GITHUB.rest.repos.deleteWebhook({
+            owner: process.env.GITHUB_ORGANIZATION!,
+            repo: repository,
+            hook_id: githubWebHook
+        }).catch(e => {})
+        
+        let guild = DISCORD.guilds.cache.get(process.env.DISCORD_SERVERID!)!
+        guild.channels.cache.get(channelId)?.delete()
     }
     //#endregion
 
