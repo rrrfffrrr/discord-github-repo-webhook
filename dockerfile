@@ -26,4 +26,5 @@ ENV WEBHOOK_PORT=8080
 
 EXPOSE 80
 EXPOSE 443
+VOLUME [ "/usr/src/app/db" ]
 CMD [ "npm", "start" ]
