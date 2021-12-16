@@ -1,34 +1,12 @@
 import errors from 'http-errors'
 import express, { NextFunction, Request, Response } from 'express'
-import { verify, sign } from '@octokit/webhooks-methods'
 import { Logger } from 'winston'
-import { DB } from './db'
 
 export class Webhook {
-    constructor(logger: Logger, db: DB, callback: (guild: string, organization: string, body: any) => Promise<void>) {
+    constructor(logger: Logger, callback: (req: Request, res: Response, next: NextFunction) => void) {
         const app = express()
             .use(express.json())
-            .use('/webhook/:guildId/github', async (req, res, next) => {
-                let guild: string = req.params.guildId
-                let organization: string = req.body.organization.login
-                
-                try {
-                    let secret = await db.GetSecret(guild, organization)
-                    let payload = JSON.stringify(req.body, null, 2) + '\n'
-            
-                    let sig = await sign(secret, payload)
-                    let valid = await verify(secret, payload, sig)
-            
-                    if (valid) {
-                        await callback(guild, organization, req.body)
-                    } else {
-                        throw new Error("Fail to verify payload")
-                    }
-                } catch (e) {
-                    logger.error(JSON.stringify(e))
-                    next(new errors[404])
-                }
-            })
+            .use('/webhook/:guildId/github', callback)
             .use((req, res, next) => {
                 next(new errors[404]);
             })

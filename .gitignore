@@ -128,3 +128,4 @@ dist
 
 # Typescript output dir
 bin/
+db/
