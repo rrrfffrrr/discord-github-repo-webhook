@@ -139,7 +139,8 @@ let OPTION: Option = {
             throw new Error('DISCORD: Application is not member of guild!')
 
         if (!OPTION.categoryId) {
-            let category = await guild.channels.create('Github', {
+            let name = `Github - ${process.env.GITHUB_ORGANIZATION}`
+            let category = await guild.channels.create(name, {
                 type: 'GUILD_CATEGORY',
             })
             OPTION.categoryId = category.id
