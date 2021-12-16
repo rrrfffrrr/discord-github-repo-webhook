@@ -5,7 +5,7 @@ import { Logger } from 'winston'
 import { DB } from './db'
 
 export class Webhook {
-    constructor(logger: Logger, db: DB, callback: (guild: string, organization: string, body: any) => void) {
+    constructor(logger: Logger, db: DB, callback: (guild: string, organization: string, body: any) => Promise<void>) {
         const app = express()
             .use(express.json())
             .use('/webhook/:guildId/github', async (req, res, next) => {
@@ -20,7 +20,7 @@ export class Webhook {
                     let valid = await verify(secret, payload, sig)
             
                     if (valid) {
-                        callback(guild, organization, req.body)
+                        await callback(guild, organization, req.body)
                     } else {
                         throw new Error("Fail to verify payload")
                     }

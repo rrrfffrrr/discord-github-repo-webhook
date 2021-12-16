@@ -1,5 +1,4 @@
 import winston, { createLogger } from 'winston'
-import { DiscordStream, OrganizationStream, RepositoryStream } from './data'
 
 import { DB as DBClass} from './db'
 import { Webhook as WebhookClass } from './webhook'
@@ -7,6 +6,7 @@ import { CommandCollection, Discord as DiscordClass } from './discord'
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { CommandInteraction } from 'discord.js'
 import { v4 } from 'uuid'
+import { Octokit } from '@octokit/rest'
 
 //#region Logger
 const logger = createLogger({
@@ -43,9 +43,20 @@ Initializer.push(async () => await DB.CreateTable())
 
 //#region Webhook receiver
 logger.info("WEBHOOK: Initialize")
-const WEBHOOK = new WebhookClass(logger, DB, (guild, organization, body) => {
+const WEBHOOK = new WebhookClass(logger, DB, async (guild, organization, body) => {
     switch(body.action) {
         case 'created':
+            let categoryId = await DB.GetCategory(guild, organization)
+            let client = DISCORD.GetClient()
+
+            client.guilds.cache.get(guild)?.channels.create(body.name, {
+                type: 'GUILD_TEXT',
+            })
+            let category = client.guilds.cache.get(guild)?.channels.cache.get(categoryId)
+
+            if (category!.type === 'GUILD_CATEGORY') {
+                category.
+            }
             STREAM.REPO.next({
                 action: 'created',
                 guild: guild,
@@ -80,10 +91,11 @@ DISCORD_COMMAND.AddCommand({
         .setName('regist')
         .setDescription('Regist github organization to create channels automatically.')
         .addStringOption(option =>  option.setName('organization').setRequired(true).setDescription('A target organization to generate channels.'))
+        .addStringOption(option =>  option.setName('token').setDescription('A token of github organization to add webhook.'))
     ,
     async execute(interaction: CommandInteraction) {
         var organization = interaction.options.getString('organization')
-        if (organization === null) {
+        if (!organization) {
             return interaction.reply(`You must set target organization in order to automate webhook`)
         }
 
@@ -92,17 +104,65 @@ DISCORD_COMMAND.AddCommand({
 
         try {
             let category = await interaction.guild?.channels.create(organization, { type: 'GUILD_CATEGORY'})
-            await DB.Add(guild, category!.id, organization, secret)
+            let token = interaction.options.getString('token', false)
             
-            return interaction.reply(`Your organization(${organization}) channels will be shown soon`)
-        } catch (e) {
+            var github = new Octokit({ auth: token || undefined })
+            let createResponse = await github.rest.orgs.createWebhook({
+                name: 'web',
+                org: organization,
+                config: {
+                    url: process.env.WEBHOOK_URL!,
+                    secret: secret,
+                    content_type: 'json'
+                },
+                events: ['repository'],
+            })
+            await DB.Add(guild, category!.id, organization, secret)
 
+            let repoList = await github.repos.listForOrg({
+                org: organization
+            })
+
+            repoList.data.forEach(async v => {
+                CreateLink(guild, organization!, v.name, v.description || '')
+            })
+            
+            return interaction.reply(`Your organization(${organization}) registed to automate channels`)
+        } catch (e) {
+            interaction.reply(`Fail to regist a organization.`)
         }
     },
 })
 const DISCORD = new DiscordClass(logger, DISCORD_COMMAND)
 
+Initializer.push(async () => {
+    if (!process.env.WEBHOOK_URL) {
+        throw new Error(`DISCORD: WEBHOOK_URL not set!`)
+    }
+})
 Initializer.push(async () => await DISCORD.Login(process.env.DISCORD_TOKEN || ''));
+//#endregion
+
+//#region Logic
+async function CreateOrgHook(guild: string, organization: string, repoName: string, repoDescription: string) {
+    let channel = await category?.createChannel(repoName, {
+        type: 'GUILD_TEXT',
+        topic: `${repoName} ${repoDescription}`
+    })
+    let discordHook = await channel?.createWebhook('Github')
+    
+    let hookResponse = await github.repos.createWebhook({
+        repo: v.full_name,
+        owner: interaction.applicationId,
+        config: {
+            url: `${discordHook!.url}/github`,
+            content_type: 'json',
+        }
+    })
+}
+async function CreateRepoHook(guild: string, organization: string, repoName: string, repoDescription: string) {
+
+}
 //#endregion
 
 //#region Entrypoint

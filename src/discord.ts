@@ -53,6 +53,9 @@ export class Discord {
             }
         });
 
+        this.GetClientInternal = () => {
+            return client
+        }
         this.LoginInternal = async (token) => {
             rest.setToken(token)
             return await client.login(token)
@@ -60,6 +63,10 @@ export class Discord {
     }
 
     private async InvokeUninitializedError(): Promise<any> { throw new Error("Class does not initialized.") }
+
+    private GetClientInternal: () => Client = () => { throw new Error("Class does not initialized.") }
+    public GetClient() { return this.GetClientInternal() }
+
     private LoginInternal: (token: string) => Promise<string> = this.InvokeUninitializedError 
     public async Login(token: string) {
         return await this.LoginInternal(token)

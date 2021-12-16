@@ -1,22 +1,44 @@
 import { createPool, PoolOptions } from 'mysql2'
 import { Logger } from 'winston'
 
-const LINK_TABLE_NAME = 'option_2829c680'
+const LINK_TABLE_NAME = 'LINK'
+const REPO_TABLE_NAME = 'REPO'
 const DB_STATEMENT = {
     LINK: {
         CREATE_TABLE: `CREATE TABLE IF NOT EXISTS ${LINK_TABLE_NAME} (
             id INT PRIMARY KEY AUTO_INCREMENT,
-            valid BOOLEAN,
+            valid BOOLEAN DEFAULT TRUE,
             guild VARCHAR(32),
             category VARCHAR(32),
             organization VARCHAR(64),
             secret VARCHAR(128)
         );`,
-        ADD: `INSERT INTO ${LINK_TABLE_NAME} (valid, guild, category, organization, secret) VALUES (true, ?, ?, ?, ?)`,
+        ADD: `INSERT INTO ${LINK_TABLE_NAME} (guild, category, organization, secret) VALUES (?, ?, ?, ?)`,
         EXPIRE: `UPDATE ${LINK_TABLE_NAME} SET valid = false WHERE guild = ? AND organization = ?`,
+        GET_ID: `SELECT id FROM ${LINK_TABLE_NAME} WHERE guild = ? AND organization = ? AND valid IS TRUE`,
         GET_SECRET: `SELECT secret FROM ${LINK_TABLE_NAME} WHERE guild = ? AND organization = ? AND valid IS TRUE`,
         GET_CATEGORY: `SELECT category FROM ${LINK_TABLE_NAME} WHERE guild = ? AND organization = ? AND valid IS TRUE`,
     },
+    REPO: {
+        CREATE_TABLE: `CREATE TABLE IF NOT EXISTS ${REPO_TABLE_NAME} (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            link INT,
+            valid BOOLEAN DEFAULT TRUE,
+            repository VARCHAR(64),
+            channel VARCHAR(32),
+            webhook BIGINT,
+            FOREIGN KEY (link) REFERENCES ${LINK_TABLE_NAME}(id)
+        );`,
+        EXPIRE: `UPDATE ${REPO_TABLE_NAME} SET valid = false WHERE link = ? AND repository = ?`,
+        GET_INFO: `SELECT R.channel, R.webhook 
+            FROM ${REPO_TABLE_NAME} R, ${LINK_TABLE_NAME} L 
+            WHERE R.link = L.id 
+            AND L.guild = ? 
+            AND L.organization = ? 
+            AND R.repository = ? 
+            AND L.valid IS TRUE AND R.valid IS TRUE
+        `,
+    }
 }
 
 export class DB {
@@ -27,6 +49,7 @@ export class DB {
         this.CreateTableInternal = async () => {
             logger.info("DB: Generate tables")
             await DBPromise.execute(DB_STATEMENT.LINK.CREATE_TABLE)
+            await DBPromise.execute(DB_STATEMENT.REPO.CREATE_TABLE)
             return true
         }
         this.AddInternal = async (guild, category, organization, secret) => {
@@ -75,6 +98,11 @@ export class DB {
     
     private GetCategoryIDInternal: (guild: string, organization: string) => Promise<string> = this.InvokeUninitializedError
     public async GetCategory(guild: string, organization: string) {
+        return await this.GetCategoryIDInternal(guild, organization)
+    }
+    
+    private GetRepoInternal: (guild: string, organization: string) => Promise<string> = this.InvokeUninitializedError
+    public async GetRepositoryInfo(guild: string, organization: string) {
         return await this.GetCategoryIDInternal(guild, organization)
     }
 }
