@@ -190,6 +190,10 @@ let OPTION: Option = {
 
     //#region Logic
     async function GenerateGithubDiscordLink(repository: string, description: string) {
+        let data = GetRepository(repository)
+        if (data !== undefined)
+            return
+
         logger.info(`Generate link for ${repository}`)
         let guild = DISCORD.guilds.cache.get(process.env.DISCORD_SERVERID!)!
 
@@ -213,10 +217,11 @@ let OPTION: Option = {
         UpdateRepository(repository, channel.id, githubHook.data.id, discordHook.id)
     }
     async function RemoveGithubDiscordLink(repository: string) {
-        logger.info(`Remove link for ${repository}`)
         let data = GetRepository(repository)
         if (data === undefined)
             return
+        
+        logger.info(`Remove link for ${repository}`)
         let [channelId, githubWebHook, discordWebHook] = data
 
         GITHUB.rest.repos.deleteWebhook({
