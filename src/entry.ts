@@ -167,6 +167,10 @@ let OPTION: Option = {
                         return
                     }
 
+                    if (v.archived) {
+                        return
+                    }
+
                     GenerateGithubDiscordLink(v.name, `${v.html_url} ${v.description}`)
                 } catch (e) {
                     logger.error(`DISCORD: Fail to create link with ${v.name}`)
@@ -235,6 +239,8 @@ let OPTION: Option = {
             if (req.body.action === 'created') {
                 await GenerateGithubDiscordLink(req.body.repository.name, `${req.body.repository.html_url} ${req.body.repository.description}`)
             }
+
+            res.sendStatus(204)
         } catch (e) {
             logger.error(e)
             next()
