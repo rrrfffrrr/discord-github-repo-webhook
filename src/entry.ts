@@ -224,14 +224,22 @@ let OPTION: Option = {
         logger.info(`Remove link for ${repository}`)
         let [channelId, githubWebHook, discordWebHook] = data
 
-        GITHUB.rest.repos.deleteWebhook({
-            owner: process.env.GITHUB_ORGANIZATION!,
-            repo: repository,
-            hook_id: githubWebHook
-        }).catch(e => {})
+        try {
+            await GITHUB.rest.repos.deleteWebhook({
+                owner: process.env.GITHUB_ORGANIZATION!,
+                repo: repository,
+                hook_id: githubWebHook
+            })
+        } catch {
+            
+        }
         
         let guild = DISCORD.guilds.cache.get(process.env.DISCORD_SERVERID!)!
-        guild.channels.cache.get(channelId)?.delete()
+        try {
+            guild.channels.cache.get(channelId)?.delete()
+        } catch {
+            
+        }
     }
     //#endregion
 
