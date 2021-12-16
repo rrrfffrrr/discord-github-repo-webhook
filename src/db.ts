@@ -1,18 +1,19 @@
 import { createPool, PoolOptions } from 'mysql2'
 import { Logger } from 'winston'
 
+const LINK_TABLE_NAME = 'option_2829c680'
 const DB_STATEMENT = {
     LINK: {
-        CREATE_TABLE: `CREATE TABLE IF NOT EXISTS option_2829c680 (
+        CREATE_TABLE: `CREATE TABLE IF NOT EXISTS ${LINK_TABLE_NAME} (
             id INT PRIMARY KEY AUTO_INCREMENT,
             valid BOOLEAN,
             guild VARCHAR(32),
             organization VARCHAR(64),
             secret VARCHAR(128)
         );`,
-        ADD: `INSERT INTO option_2829c680 (valid, guild, organization, secret) VALUES (true, ?, ?, ?)`,
-        EXPIRE: `UPDATE option_2829c680 SET valid = false WHERE guild = ? AND organization = ?`,
-        GET_SECRET: `SELECT secret FROM option_2829c680 WHERE guild = ? AND organization = ? AND valid IS TRUE`
+        ADD: `INSERT INTO ${LINK_TABLE_NAME} (valid, guild, organization, secret) VALUES (true, ?, ?, ?)`,
+        EXPIRE: `UPDATE ${LINK_TABLE_NAME} SET valid = false WHERE guild = ? AND organization = ?`,
+        GET_SECRET: `SELECT secret FROM ${LINK_TABLE_NAME} WHERE guild = ? AND organization = ? AND valid IS TRUE`
     },
 }
 
