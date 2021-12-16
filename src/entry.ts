@@ -5,7 +5,9 @@ import { DiscordStream, OrganizationStream, RepositoryStream } from './data'
 
 import { DB as DBClass} from './db'
 import { Webhook as WebhookClass } from './webhook'
-import { Discord as DiscordClass } from './discord'
+import { CommandCollection, Discord as DiscordClass } from './discord'
+import { SlashCommandBuilder } from '@discordjs/builders'
+import { CommandInteraction } from 'discord.js'
 
 //#region Logger
 const logger = createLogger({
@@ -32,7 +34,7 @@ const STREAM = {
 //#endregion
 
 //#region Subsystem callback
-const Initializer: Promise<any>[] = []
+const Initializer: (() => Promise<any>)[] = []
 //#endregion
 
 //#region DB
@@ -46,7 +48,7 @@ const DB = new DBClass({
     port            : parseInt(process.env.DB_PORT || "3306")
 },logger)
 
-Initializer.push(DB.CreateTable())
+Initializer.push(async () => await DB.CreateTable())
 //#endregion
 
 //#region Webhook receiver
@@ -76,19 +78,38 @@ const WEBHOOK = new WebhookClass(logger, DB, (guild, organization, body) => {
     let port = parseInt(process.env.WEBHOOK_PORT || '8080')
     if (isNaN(port))
         port = 8080
-    Initializer.push(WEBHOOK.Listen(port))
+    Initializer.push(async () => await WEBHOOK.Listen(port))
 }
 //#endregion
 
 //#region Discord
 logger.info("Discord: Initialize")
-const DISCORD = new DiscordClass(logger)
+const DISCORD_COMMAND = new CommandCollection()
+DISCORD_COMMAND.AddCommand({
+    data: new SlashCommandBuilder()
+        .setName('avatar')
+        .setDescription('Get the avatar URL of the selected user, or your own avatar.')
+        .addUserOption(option => 
+            option.setName('target').setDescription('The user\'s avatar to show')
+    ),
+    async execute(interaction: CommandInteraction) {
+        const user = interaction.options.getUser('target');
+        if (user) return interaction.reply(`${user.username}'s avatar: ${user.displayAvatarURL({ dynamic: true })}`);
+        return interaction.reply(`Your avatar: ${interaction.user.displayAvatarURL({ dynamic: true })}`);
+    },
+})
+const DISCORD = new DiscordClass(logger, DISCORD_COMMAND)
 
-Initializer.push(DISCORD.Login(process.env.DISCORD_TOKEN))
+Initializer.push(async () => await DISCORD.Login(process.env.DISCORD_TOKEN || ''));
 //#endregion
 
 //#region Entrypoint
-Promise.all(Initializer).then(() => {
+(async function() {
+    for (let i = 0; i < Initializer.length; i++) {
+        const element = Initializer[i];
+        await element()
+    }
+})().then(() => {
     logger.info("ENTRY: Server started")
 }).catch(e => {
     logger.error(e)
