@@ -22,6 +22,10 @@ export class Discord {
 
         client.once('ready', () => {
             console.log(`Logged in as ${client.user?.tag}!`);
+
+            client.guilds.cache.forEach(async guild => {
+                await RegistGuildCommand(client.application!.id, guild.id)
+            })
         })
 
         client.on('guildCreate', async guild => {
@@ -74,5 +78,6 @@ export class CommandCollection {
     }
     public AddCommand(command: Command) {
         this.CommandList.set(command.data.name, command)
+        return this
     }
 }

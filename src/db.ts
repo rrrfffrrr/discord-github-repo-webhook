@@ -8,12 +8,14 @@ const DB_STATEMENT = {
             id INT PRIMARY KEY AUTO_INCREMENT,
             valid BOOLEAN,
             guild VARCHAR(32),
+            category VARCHAR(32),
             organization VARCHAR(64),
             secret VARCHAR(128)
         );`,
-        ADD: `INSERT INTO ${LINK_TABLE_NAME} (valid, guild, organization, secret) VALUES (true, ?, ?, ?)`,
+        ADD: `INSERT INTO ${LINK_TABLE_NAME} (valid, guild, category, organization, secret) VALUES (true, ?, ?, ?, ?)`,
         EXPIRE: `UPDATE ${LINK_TABLE_NAME} SET valid = false WHERE guild = ? AND organization = ?`,
-        GET_SECRET: `SELECT secret FROM ${LINK_TABLE_NAME} WHERE guild = ? AND organization = ? AND valid IS TRUE`
+        GET_SECRET: `SELECT secret FROM ${LINK_TABLE_NAME} WHERE guild = ? AND organization = ? AND valid IS TRUE`,
+        GET_CATEGORY: `SELECT category FROM ${LINK_TABLE_NAME} WHERE guild = ? AND organization = ? AND valid IS TRUE`,
     },
 }
 
@@ -27,9 +29,9 @@ export class DB {
             await DBPromise.execute(DB_STATEMENT.LINK.CREATE_TABLE)
             return true
         }
-        this.AddInternal = async (guild, organization, secret) => {
+        this.AddInternal = async (guild, category, organization, secret) => {
             logger.info(`DB: Add link(${guild} - ${organization})`)
-            await DBPromise.execute(DB_STATEMENT.LINK.ADD, [guild, organization, secret])
+            await DBPromise.execute(DB_STATEMENT.LINK.ADD, [guild, category, organization, secret])
             return true
         }
         this.ExpireInternal = async (guild, organization) => {
@@ -38,8 +40,13 @@ export class DB {
             return true
         }
         this.GetSecretInternal = async (guild, organization) => {
-            logger.info(`DB: Expire link(${guild} - ${organization})`)
+            logger.info(`DB: Get secret link(${guild} - ${organization})`)
             let [[result], [fields]] = await DBPromise.query(DB_STATEMENT.LINK.GET_SECRET, [guild, organization])
+            return result.secret
+        }
+        this.GetCategoryIDInternal = async (guild, organization) => {
+            logger.info(`DB: Get category link(${guild} - ${organization})`)
+            let [[result], [fields]] = await DBPromise.query(DB_STATEMENT.LINK.GET_CATEGORY, [guild, organization])
             return result.secret
         }
     }
@@ -51,9 +58,9 @@ export class DB {
         await this.CreateTableInternal()
     }
 
-    private AddInternal: (guild: string, organization: string, secret: string) => Promise<true> = this.InvokeUninitializedError
-    public async Add(guild: string, organization: string, secret: string) {
-        await this.AddInternal(guild, organization, secret)
+    private AddInternal: (guild: string, category: string, organization: string, secret: string) => Promise<true> = this.InvokeUninitializedError
+    public async Add(guild: string, category: string, organization: string, secret: string) {
+        await this.AddInternal(guild, category, organization, secret)
     }
 
     private ExpireInternal: (guild: string, organization: string) => Promise<true> = this.InvokeUninitializedError
@@ -64,5 +71,10 @@ export class DB {
     private GetSecretInternal: (guild: string, organization: string) => Promise<string> = this.InvokeUninitializedError
     public async GetSecret(guild: string, organization: string) {
         return await this.GetSecretInternal(guild, organization)
+    }
+    
+    private GetCategoryIDInternal: (guild: string, organization: string) => Promise<string> = this.InvokeUninitializedError
+    public async GetCategory(guild: string, organization: string) {
+        return await this.GetCategoryIDInternal(guild, organization)
     }
 }

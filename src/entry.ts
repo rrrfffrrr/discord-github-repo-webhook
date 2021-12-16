@@ -1,5 +1,3 @@
-import { Subject } from 'rxjs'
-
 import winston, { createLogger } from 'winston'
 import { DiscordStream, OrganizationStream, RepositoryStream } from './data'
 
@@ -8,6 +6,7 @@ import { Webhook as WebhookClass } from './webhook'
 import { CommandCollection, Discord as DiscordClass } from './discord'
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { CommandInteraction } from 'discord.js'
+import { v4 } from 'uuid'
 
 //#region Logger
 const logger = createLogger({
@@ -21,15 +20,6 @@ if (process.env.NODE_ENV === 'development') {
     logger.add(new winston.transports.Console({
         format: winston.format.simple(),
     }));
-}
-//#endregion
-
-//#region Rx
-logger.info("STREAM: Initialize")
-const STREAM = {
-    ORGS: new Subject<OrganizationStream>(),
-    REPO: new Subject<RepositoryStream>(),
-    DISCORD: new Subject<DiscordStream>(),
 }
 //#endregion
 
@@ -96,6 +86,30 @@ DISCORD_COMMAND.AddCommand({
         const user = interaction.options.getUser('target');
         if (user) return interaction.reply(`${user.username}'s avatar: ${user.displayAvatarURL({ dynamic: true })}`);
         return interaction.reply(`Your avatar: ${interaction.user.displayAvatarURL({ dynamic: true })}`);
+    },
+}).AddCommand({
+    data: new SlashCommandBuilder()
+        .setName('regist')
+        .setDescription('Regist github organization to create channels automatically.')
+        .addStringOption(option =>  option.setName('organization').setRequired(true).setDescription('A target organization to generate channels.'))
+    ,
+    async execute(interaction: CommandInteraction) {
+        var organization = interaction.options.getString('organization')
+        if (organization === null) {
+            return interaction.reply(`You must set target organization in order to automate webhook`)
+        }
+
+        var guild = interaction.guildId
+        var secret = v4().replace('-', '')
+
+        try {
+            let category = await interaction.guild?.channels.create(organization, { type: 'GUILD_CATEGORY'})
+            await DB.Add(guild, category!.id, organization, secret)
+            
+            return interaction.reply(`Your organization(${organization}) channels will be shown soon`)
+        } catch (e) {
+
+        }
     },
 })
 const DISCORD = new DiscordClass(logger, DISCORD_COMMAND)
