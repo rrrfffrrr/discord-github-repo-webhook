@@ -55,7 +55,7 @@ const QUERY = {
         )`,
         UPDATE: `INSERT INTO repositories (repository, channelId, githubWebHook, discordWebHook) VALUES (?, ?, ?, ?)`,
         GET: `SELECT valid, channelId, githubWebHook, discordWebHook FROM repositories WHERE repository = ? ORDER BY id DESC LIMIT 1`,
-        EXPIRE: `INSERT INTO repositories (valid, repository, channelId, githubWebHook, discordWebHook) VALUES (0, ?, "", "", "")`,
+        EXPIRE: `INSERT INTO repositories (valid, repository, channelId, githubWebHook, discordWebHook) VALUES (0, ?, '', '', '')`,
     },
 }
 //#endregion
@@ -305,6 +305,6 @@ let OPTION: Option = {
 })().then(() => {
     logger.info("ENTRY: Server started")
 }).catch(e => {
-    logger.error(e)
+    logger.error({ message: e })
     process.exit(1)
 })
