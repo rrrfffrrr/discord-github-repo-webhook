@@ -1,8 +1,7 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
-import { Routes } from "discord-api-types";
 import { Client, Collection, CommandInteraction, Intents } from "discord.js";
-import { RESTPostAPIApplicationCommandsJSONBody } from "discord.js/node_modules/discord-api-types";
+import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord.js/node_modules/discord-api-types";
 import { Logger } from "winston";
 
 export class Discord {
