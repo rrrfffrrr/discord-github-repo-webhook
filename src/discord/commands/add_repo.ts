@@ -1,5 +1,5 @@
-import { Log, Wrap } from '../logger'
-import { CommandBlock } from '../command_dependency'
+import { Log, Wrap } from '../../logger'
+import { CommandBlock } from '../dependency'
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { ChannelType } from 'discord-api-types'
 import { Octokit } from '@octokit/rest';

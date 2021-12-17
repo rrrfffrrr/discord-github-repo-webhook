@@ -1,7 +1,7 @@
 import { Log, Wrap } from './logger'
 
 import { Client, Intents } from 'discord.js'
-import { RegistCommand, Commands } from './discord_command'
+import { RegistCommand, Commands } from './discord'
 
 ;(async () => {
     //#region Discord

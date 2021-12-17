@@ -1,11 +1,11 @@
-import { Log } from './logger'
+import { Log } from '../logger'
 
 import { REST } from '@discordjs/rest';
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types';
 import { Routes } from 'discord-api-types/v9';
 
-import { CommandBlock } from './command_dependency'
-import * as commands from './commands/index'
+import { CommandBlock } from './dependency'
+import * as commands from './commands'
 import { Collection, Guild } from 'discord.js';
 
 const CommandCollection = new Collection<string, CommandBlock>()
