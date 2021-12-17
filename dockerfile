@@ -22,9 +22,7 @@ RUN apk del build-base python3
 ENV NODE_ENV=production
 ENV LOG_LEVEL=info
 
-ENV WEBHOOK_PORT=8080
-
 EXPOSE 80
 EXPOSE 443
-VOLUME [ "/usr/src/app/db", "/usr/src/app/logs" ]
+VOLUME [ "/usr/src/app/logs" ]
 CMD [ "npm", "start" ]
