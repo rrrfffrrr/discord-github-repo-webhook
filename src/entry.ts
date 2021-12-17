@@ -16,6 +16,15 @@ import { RegistCommand, Commands } from './discord_command'
         })
     })
 
+    DISCORD.on('guildCreate', async guild => {
+        try {
+            await RegistCommand(guild)
+        } catch (e) {
+            Log.error(Wrap(e))
+            guild.leave().catch(e => Log.error(Wrap(e)))
+        }
+    })
+
     DISCORD.on('interactionCreate', async interaction => {
         if (!interaction.isCommand()) return;
     
