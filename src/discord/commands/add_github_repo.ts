@@ -5,12 +5,12 @@ import { ChannelType } from 'discord-api-types'
 import { Octokit } from '@octokit/rest';
 import { MessageEmbed } from 'discord.js';
 
+// TODO: Can be added to exists channel
 export default {
 	data: new SlashCommandBuilder()
 		.setName('add_repo')
 		.setDescription('Create new text channel that hooked with github repo')
-        .addStringOption(option => option.setName('orgs').setRequired(true).setDescription('Github organization name that contain target repo'))
-        .addStringOption(option => option.setName('repo').setRequired(true).setDescription('Target repository name'))
+        .addStringOption(option => option.setName('repo').setRequired(true).setDescription('Target repository name\nex) example/repo'))
         .addStringOption(option => option.setName('access_token').setRequired(true).setDescription('Github access token that have webhook management permission of target repo'))
         .addChannelOption(option => option.setName('category').setRequired(false).setDescription('A category the new channel will belong to').addChannelType(ChannelType.GuildCategory))
     ,
@@ -24,7 +24,6 @@ export default {
         }
         try {
             const guild = interaction.guild!
-            const orgs = interaction.options.getString('orgs', true)
             const repo = interaction.options.getString('repo', true)
             const secret = interaction.options.getString('access_token', true)
             const parent = interaction.options.getChannel('category', false)
@@ -41,9 +40,10 @@ export default {
             })
 
             try {
+                const [orgs, repos] = repo.split('/')
                 let check = await github.rest.repos.get({
                     owner: orgs,
-                    repo: repo,
+                    repo: repos,
                 })
 
                 try {
